@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
 import {useEffect, useState} from 'react'
+import styles from "../styles/Home.module.css"
 
 
 export default function HomePage(){
@@ -9,6 +10,7 @@ export default function HomePage(){
   const [usdt, setUsdt] = useState('');
   const [data, setData] = useState('');
   const [signer, setSigner] = useState(null);
+  const [isConnected, setConncted] = useState(false);
 
   ///@dev getting the price or swapping info or address
   const getQuote = async() => {
@@ -31,22 +33,24 @@ export default function HomePage(){
     }
   }
   
+
   ///@dev connecting to the metamask wallet
   const connectMetaMask = async() => {
     try{
       if(window.ethereum){
         const provider = new ethers.BrowserProvider(window.ethereum)
         const signer = await provider.getSigner();
-        console.log(signer.address)
         setSigner(signer);
+        setConncted(true);
       }else{
         console.log("MetaMask not installed; using read-only defaults")
         provider = ethers.getDefaultProvider()    
       }
     }catch(error){
-      console.log(error);
+      alert('make sure you have metamask!!')
     }
   }
+
 
   ///@dev purchasing the token or swapping
   const purchaseUSDT = async() => {
@@ -58,45 +62,65 @@ export default function HomePage(){
         data: data.data,
         value: ethers.parseEther(eth),
       })
-      console.log('purchasing')
 
       const receipt = await tx.wait();
       console.log(receipt);
       alert('purchase USDT susscesfully!')
     }catch(error){
-      console.log('error purchasing USDT');
+      alert('purchase failed!!')
     }
   }
 
-  ///@dev on rendering the page or refresing, trying of connect to metamask
-  useEffect(()=>{
-    connectMetaMask();
-  },[])
+
+
+  ///@dev site will refresh when the isConnect is changes
+  useEffect(()=>{},[isConnected]);
+
+
+  ///@dev connect metamask
+  if(!isConnected){
+    return (<div className={styles.container}>
+      <button onClick={connectMetaMask} className={styles.button}>connect wallet</button>
+    </div>)
+  }
+
 
   ///@dev rendering the elements into the page of next-js/index.js
-  return (<div style={{
-      display: 'flex', 
-      alignItems: 'center', 
-      flexDirection: 'column',
-      justifyContent: 'center',
-      height:'100vh'}}>
+  return (<div className={styles.container}>
+      
+      <nav className={styles.nav}>
+        <h1>{`0xSwapp-(0xProtocol)`}</h1>
+        <button onClick={()=>{
+          setConncted(false);
+        }} className={styles.button}>disconnect account</button>
+      </nav>
 
-      <h1>Purchase USDT</h1>
-      <input type='number' value={eth} onChange={(e)=>{
-        setEth(e.target.value)
-      }} placeholder="ETH"
-        style={{height: '3vh',
-          width: '15vw',
-          padding: '10px',}}/>
-      <input type='number' value={usdt} onChange={(e)=>{
-        setUsdt(e.target.value)
-      }} placeholder="USDT"
-        disabled
-        style={{height: '3vh',
-          width: '15vw',
-          padding: '10px',}}/>
-      <button onClick={getQuote}>fetch it!!</button>
-      <button onClick={purchaseUSDT}>purchase it!!</button>
+      <div className={styles.card}>
+        <h1>Purchase USDT</h1>
+        <input type='number' value={eth} onChange={(e)=>{
+          setEth(e.target.value)
+        }} placeholder="ETH"/>
+        <input type='number' value={usdt} onChange={(e)=>{
+          setUsdt(e.target.value)
+        }} placeholder="USDT" disabled/>
+        <button onClick={getQuote} className={styles.button}>Get Details</button>
+        
+        {
+          data && <div className={styles.detail}>
+            <p>{`{`}</p>
+              <p className={styles.tab}>chainId: {data.chainId}</p>
+              <p className={styles.tab}>buyTokenAddress: {data.buyTokenAddress}</p>
+              <p className={styles.tab}>buyTokenToEthRate: {data.buyTokenToEthRate}</p>
+              <p className={styles.tab}>estimatedGas: {data.estimatedGas}</p>
+              <p className={styles.tab}>gas: {data.gas}</p>
+              <p className={styles.tab}>gasPrice: {data.gasPrice}</p>
+              <p className={styles.tab}>price: {data.price}</p>
+            <p>{`}`}</p>
+          </div>
+        }
+
+        <button onClick={purchaseUSDT} className={styles.button}>Done it!</button>
+      </div>
     </div>
   )
 }
